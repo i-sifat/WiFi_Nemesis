@@ -103,12 +103,28 @@ setup_wifi_nemesis() {
         error "Failed to clone repository"
     
     # Set permissions
-    chmod +x "$install_dir/attack.py"
+    chmod +x "$install_dir/nemesis.py"
     
     # Create alias
     info "Creating command alias..."
-    echo "alias wa='sudo python $install_dir/attack.py'" >> "$HOME/.bashrc"
-    echo "alias wa='sudo python $install_dir/attack.py'" >> "$HOME/.zshrc"
+    # Avoid duplicate aliases
+    sed -i '/alias wa=/d' "$HOME/.bashrc" 2>/dev/null
+    sed -i '/alias wa=/d' "$HOME/.zshrc" 2>/dev/null
+    echo "alias wa='sudo python $install_dir/nemesis.py'" >> "$HOME/.bashrc"
+    echo "alias wa='sudo python $install_dir/nemesis.py'" >> "$HOME/.zshrc"
+    
+    # Create a direct executable link
+    mkdir -p "$HOME/.local/bin"
+    ln -sf "$install_dir/nemesis.py" "$HOME/.local/bin/wa"
+    chmod +x "$HOME/.local/bin/wa"
+    
+    # Add local bin to PATH if not already present
+    if ! grep -q '$HOME/.local/bin' "$HOME/.bashrc"; then
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+    fi
+    if ! grep -q '$HOME/.local/bin' "$HOME/.zshrc"; then
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc"
+    fi
 }
 
 # Verify installation
@@ -123,6 +139,12 @@ verify_installation() {
             exit 1
         fi
     done
+    
+    # Verify nemesis.py exists and is executable
+    if [ ! -x "$HOME/wifi-nemesis/nemesis.py" ]; then
+        error "nemesis.py not found or not executable"
+        exit 1
+    fi
     
     success "Installation verified successfully"
 }
